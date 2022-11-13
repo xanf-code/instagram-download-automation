@@ -112,25 +112,25 @@ def uploadImagetoInstagam():
 
 def likehashtags():
     for hashtag in hashtags:
-        medias = cl.hashtag_medias_top(hashtag, amount=1)
-        for media in medias:
-            cl.media_like(media.id)
-            time.sleep(3)
+        medias = cl.hashtag_medias_top_a1(hashtag, amount=1)
+    for media in medias:
+        cl.media_like(media.id)
+        time.sleep(5)
 
 def userFollowers():
     for follower in followers:
-        users = cl.user_followers(follower, amount=3)
-        for user in users:
-            cl.user_follow(user)
-            time.sleep(3)
+        users = cl.user_followers_gql(follower, amount=3)
+    for user in users:
+        cl.user_follow(user)
+        time.sleep(10)
 
 def commentOnMedia():
     comment = random.choice(comments)
     for hashtag in hashtags:
-        medias = cl.hashtag_medias_top(hashtag, amount=1)
-        for media in medias:
-            cl.media_comment(media.id, comment)
-            time.sleep(3)
+        medias = cl.hashtag_medias_top_a1(hashtag, amount=1)
+    for media in medias:
+        cl.media_comment(media.id, comment)
+        time.sleep(10)
             
 def instagramEngagement():
     # Get Most recent posts by Hashtag
