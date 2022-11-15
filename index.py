@@ -8,6 +8,20 @@ import shutil
 import time
 from instagrapi import Client
 import random
+from requests.exceptions import ProxyError
+from urllib3.exceptions import HTTPError
+from instagrapi.exceptions import (
+    ClientConnectionError,
+    ClientForbiddenError,
+    ClientLoginRequired,
+    ClientThrottledError,
+    GenericRequestError,
+    PleaseWaitFewMinutes,
+    RateLimitError,
+    SentryBlock,
+)
+import datetime
+currentTime = datetime.datetime.now()
 
 # Hashtag List
 hashtags = [
@@ -58,10 +72,32 @@ comments = ["Really nice.", "I like this.", "Nice.", "OMG.", "Great feed!", "Rem
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+proxy = [
+    '10235',
+    '10236',
+    '10237',
+    '10238',
+    '10239'
+]
+
+port = random.choice(proxy)
+
 # Instagrapi config
 cl = Client()
-cl.login(config['instagram']['insta_username'],
-         config['instagram']['insta_password'])
+cl = Client(proxy='http://' + config['proxy']['username'] + ':' +
+            config['proxy']['password'] + '@' + config['proxy']['ipv6'] + ':' + port)
+try:
+    cl.login(config['instagram']['insta_username'],
+             config['instagram']['insta_password'])
+except (ProxyError, HTTPError, GenericRequestError, ClientConnectionError):
+    # Network level
+    cl.set_proxy(next_proxy())
+except (SentryBlock, RateLimitError, ClientThrottledError):
+    # Instagram limit level
+    cl.set_proxy(next_proxy())
+except (ClientLoginRequired, PleaseWaitFewMinutes, ClientForbiddenError):
+    # Logical level
+    cl.set_proxy(next_proxy())
 
 cloudinary.config(
     cloud_name=config['cloudinary']['cloud_name'],
@@ -93,7 +129,7 @@ def downloadImage():
 def uploadImagetoInstagam():
     cl.photo_upload(path="next_post.jpg",
                     caption="""
-                 Follow @3.am.__.talks for more relatable quotes ✨🥀
+                 Follow @3am_thoughts5 for more relatable quotes ✨🥀
 .
 .
 .
@@ -111,40 +147,46 @@ def uploadImagetoInstagam():
 
 
 def likehashtags():
-    for hashtag in hashtags:
-        medias = cl.hashtag_medias_top_a1(hashtag, amount=1)
+    like_hashtag = random.sample(hashtags, 3)
+    for hashtag in like_hashtag:
+        medias = cl.hashtag_medias_top(hashtag, amount=25)
     for media in medias:
         cl.media_like(media.id)
         time.sleep(5)
 
+
 def userFollowers():
     for follower in followers:
-        users = cl.user_followers_gql(follower, amount=3)
+        users = cl.user_followers(follower, amount=20)
     for user in users:
         cl.user_follow(user)
-        time.sleep(10)
+        time.sleep(5)
+
 
 def commentOnMedia():
-    comment = random.choice(comments)
-    for hashtag in hashtags:
-        medias = cl.hashtag_medias_top_a1(hashtag, amount=1)
+    like_hashtag = random.sample(hashtags, 3)
+    for hashtag in like_hashtag:
+        medias = cl.hashtag_medias_top(hashtag, amount=20)
     for media in medias:
+        comment = random.choice(comments)
         cl.media_comment(media.id, comment)
-        time.sleep(10)
-            
+        time.sleep(5)
+
+
 def instagramEngagement():
     # Get Most recent posts by Hashtag
-    likehashtags()
-    print("Liking hashtags Successful")
-    time.sleep(5)
+    if currentTime.hour >= 9 and currentTime.hour <= 12:
+        likehashtags()
+        print("Liking hashtags Successful")
     # Follow users of a particular user
-    userFollowers()
-    print("Following users Successful")
-    time.sleep(5)
+    elif currentTime.hour >= 15 and currentTime.hour <= 17:
+        userFollowers()
+        print("Following users Successful")
     # Comment on posts
-    commentOnMedia()
-    print("Commenting on posts Successful")
-    time.sleep(5)
+    elif currentTime.hour >= 18 and currentTime.hour <= 24:
+        commentOnMedia()
+        print("Commenting on posts Successful")
+
 
 def main():
     downloadImage()
@@ -153,6 +195,8 @@ def main():
     print("--------Image Uploaded Successfully--------")
     instagramEngagement()
     print("--------Instagram Engagement Successful--------")
+    cl.logout()
+    print("--------Logged Out Successfully--------")
 
 
 main()
